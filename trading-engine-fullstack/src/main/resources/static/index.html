@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Apex Exchange - Mobile Trading</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Mobile App Container -->
+    <div class="mobile-frame">
+        <!-- Top Status Bar -->
+        <header class="app-header">
+            <div class="header-top">
+                <div class="brand">
+                    <span class="brand-dot"></span>
+                    <span class="brand-title">APEX MATCH</span>
+                </div>
+                <!-- Trader Switcher -->
+                <div class="trader-switch-container">
+                    <span class="label">Trader:</span>
+                    <select id="traderSelector" class="trader-select">
+                        <option value="T001">Alice (T001)</option>
+                        <option value="T002">Bob (T002)</option>
+                        <option value="T003">Carol (T003)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Account Snapshot Bar -->
+            <div class="account-bar">
+                <div class="acc-stat">
+                    <span class="acc-label">Cash</span>
+                    <span class="acc-val text-mono" id="hdrCash">$100,000.00</span>
+                </div>
+                <div class="acc-stat">
+                    <span class="acc-label">Realized P&L</span>
+                    <span class="acc-val text-mono" id="hdrPnL">$0.00</span>
+                </div>
+                <div class="connection-status">
+                    <span class="live-dot" id="liveDot"></span>
+                    <span id="liveText">LIVE</span>
+                </div>
+            </div>
+
+            <!-- Circuit Breaker Warning Banner -->
+            <div id="circuitBanner" class="circuit-banner hidden">
+                <div class="banner-content">
+                    <span class="banner-icon">⚠️</span>
+                    <span class="banner-text">CIRCUIT BREAKER: Trading Paused on <strong id="pausedTicker">AAPL</strong></span>
+                </div>
+                <button class="btn-resume-banner" onclick="resumeTrading()">Resume</button>
+            </div>
+        </header>
+
+        <!-- Main Screen Content Area -->
+        <main class="screens-container">
+            <!-- Screen 0: Auth (Login & Sign Up) -->
+            <section id="screen-auth" class="screen active">
+                <div class="auth-hero">
+                    <div class="auth-brand-badge">APEX MATCH</div>
+                    <h2>Trader Login</h2>
+                    <p class="auth-sub">Access institutional-grade order matching</p>
+                </div>
+
+                <!-- Auth Segmented Toggle -->
+                <div class="auth-toggle-bar">
+                    <button id="btnTabLogin" class="auth-tab active" onclick="switchAuthTab('login')">Log In</button>
+                    <button id="btnTabSignup" class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="formLogin" class="auth-form" onsubmit="handleLoginSubmit(event)">
+                    <div class="form-group">
+                        <label class="form-label">Username or Email</label>
+                        <input type="text" id="loginUsername" class="input-dark" placeholder="e.g. alice" value="alice" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="loginPassword" class="input-dark" placeholder="Enter password" value="password123" required>
+                    </div>
+
+                    <div id="loginError" class="order-error hidden"></div>
+
+                    <button type="submit" class="btn-auth-submit">Sign In</button>
+
+                    <!-- Quick Demo Test Accounts -->
+                    <div class="quick-test-section">
+                        <span class="quick-test-title">Quick Demo Login (Password: password123)</span>
+                        <div class="quick-test-chips">
+                            <button type="button" class="test-chip" onclick="quickFillLogin('alice', 'password123')">⚡ Alice</button>
+                            <button type="button" class="test-chip" onclick="quickFillLogin('bob', 'password123')">⚡ Bob</button>
+                            <button type="button" class="test-chip" onclick="quickFillLogin('carol', 'password123')">⚡ Carol</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Sign Up Form -->
+                <form id="formSignup" class="auth-form hidden" onsubmit="handleSignupSubmit(event)">
+                    <div class="bonus-banner">
+                        <span>🎁 <strong>$100,000</strong> Virtual Cash Included</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="signupFullName" class="input-dark" placeholder="e.g. David Miller" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="signupUsername" class="input-dark" placeholder="e.g. david" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="signupEmail" class="input-dark" placeholder="david@trading.local" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="signupPassword" class="input-dark" placeholder="At least 6 characters" required>
+                    </div>
+
+                    <div id="signupError" class="order-error hidden"></div>
+
+                    <button type="submit" class="btn-auth-submit btn-signup">Create Account & Get $100,000</button>
+                </form>
+            </section>
+
+            <!-- Screen 1: Watchlist -->
+            <section id="screen-watchlist" class="screen">
+                <div class="screen-title-bar">
+                    <h2>Markets</h2>
+                    <span class="subtitle">Live Order Matching Instruments</span>
+                </div>
+                <div class="stock-list" id="stockListContainer">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <div class="admin-quick-box">
+                    <div class="admin-title">Matching Engine Diagnostics</div>
+                    <div class="admin-actions">
+                        <button class="btn-subtle" onclick="triggerConcurrencyTest()">⚡ Run Concurrency Test</button>
+                        <button class="btn-subtle" onclick="resumeTrading()">🔄 Reset Circuit Breaker</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen 2: Market Depth & Trading -->
+            <section id="screen-trade" class="screen">
+                <div class="trade-scrip-header">
+                    <div class="scrip-meta">
+                        <h2 id="tradeTicker">AAPL</h2>
+                        <span class="scrip-sub" id="tradeTickSize">Tick: 0.01</span>
+                    </div>
+                    <div class="scrip-price-block">
+                        <div class="last-price text-mono" id="tradePrice">$100.00</div>
+                        <div class="price-change text-mono" id="tradeChange">+0.00%</div>
+                    </div>
+                </div>
+
+                <!-- Market Stats Ribbon -->
+                <div class="stats-ribbon text-mono">
+                    <div class="stat-pill"><span class="lbl">Open</span> <span id="statOpen">$100.00</span></div>
+                    <div class="stat-pill"><span class="lbl">High</span> <span id="statHigh">$100.00</span></div>
+                    <div class="stat-pill"><span class="lbl">Low</span> <span id="statLow">$100.00</span></div>
+                    <div class="stat-pill"><span class="lbl">Vol</span> <span id="statVol">0</span></div>
+                </div>
+
+                <!-- Mini Price Chart -->
+                <div class="chart-wrapper">
+                    <canvas id="miniChart" height="110"></canvas>
+                </div>
+
+                <!-- Level 2 Order Book (Market Depth) -->
+                <div class="book-container">
+                    <div class="book-header">
+                        <span>BID DEPTH (BUY)</span>
+                        <span id="spreadDisplay" class="spread-tag">Spread: $0.00</span>
+                        <span>ASK DEPTH (SELL)</span>
+                    </div>
+                    <div class="book-ladder">
+                        <!-- Bids Column -->
+                        <div class="ladder-col bids-col">
+                            <div class="col-head"><span>Orders</span> <span>Qty</span> <span>Bid</span></div>
+                            <div class="levels-list" id="bidsList">
+                                <!-- Dynamic bids -->
+                            </div>
+                        </div>
+                        <!-- Asks Column -->
+                        <div class="ladder-col asks-col">
+                            <div class="col-head"><span>Ask</span> <span>Qty</span> <span>Orders</span></div>
+                            <div class="levels-list" id="asksList">
+                                <!-- Dynamic asks -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Executed Trades Tape -->
+                <div class="tape-container">
+                    <div class="tape-header">RECENT TRADE TAPE</div>
+                    <div class="tape-list text-mono" id="tapeList">
+                        <!-- Dynamic trade entries -->
+                    </div>
+                </div>
+
+                <!-- Sticky Order Action Bar -->
+                <div class="sticky-order-bar">
+                    <button class="btn-buy" onclick="openOrderSheet('BUY')">BUY AAPL</button>
+                    <button class="btn-sell" onclick="openOrderSheet('SELL')">SELL AAPL</button>
+                </div>
+            </section>
+
+            <!-- Screen 3: Orders & Activity -->
+            <section id="screen-orders" class="screen">
+                <div class="screen-title-bar">
+                    <h2>Orders & Activity</h2>
+                </div>
+                <div class="sub-tab-bar">
+                    <button class="sub-tab active" onclick="switchOrderSubTab('open')">Open / Resting (<span id="openCount">0</span>)</button>
+                    <button class="sub-tab" onclick="switchOrderSubTab('executed')">Executed (<span id="execCount">0</span>)</button>
+                    <button class="sub-tab" onclick="switchOrderSubTab('other')">Cancelled / Rejected</button>
+                </div>
+                <div class="orders-list" id="ordersListContainer">
+                    <!-- Dynamic orders -->
+                </div>
+            </section>
+
+            <!-- Screen 4: Portfolio Holdings -->
+            <section id="screen-portfolio" class="screen">
+                <div class="screen-title-bar">
+                    <h2>Holdings & Portfolio</h2>
+                </div>
+                <div class="portfolio-card">
+                    <div class="pf-row">
+                        <span class="pf-label">Total Realized P&L</span>
+                        <span class="pf-value text-mono" id="pfRealizedPnL">$0.00</span>
+                    </div>
+                    <div class="pf-row">
+                        <span class="pf-label">Cash Balance</span>
+                        <span class="pf-value text-mono" id="pfCash">$100,000.00</span>
+                    </div>
+                </div>
+                <div class="holdings-list-title">My Positions</div>
+                <div class="positions-list" id="positionsListContainer">
+                    <!-- Dynamic positions -->
+                </div>
+            </section>
+
+            <!-- Screen 5: Funds & Engine Diagnostics -->
+            <section id="screen-funds" class="screen">
+                <div class="screen-title-bar">
+                    <h2>Funds & Wallet</h2>
+                </div>
+                <div class="funds-card">
+                    <div class="funds-hero">
+                        <span class="funds-label">Available Balance</span>
+                        <h1 class="funds-amount text-mono" id="fundsAvailable">$100,000.00</h1>
+                    </div>
+                    <div class="deposit-section">
+                        <div class="input-with-btn">
+                            <input type="number" id="depositAmount" placeholder="Amount (e.g. 5000)" value="5000" class="input-dark">
+                            <button class="btn-deposit" onclick="depositFunds()">Deposit Cash</button>
+                        </div>
+                    </div>
+                <div class="user-profile-card">
+                    <div class="up-header">
+                        <div class="avatar-circle" id="userAvatar">A</div>
+                        <div class="up-details">
+                            <h3 id="profileFullName">Alice Smith</h3>
+                            <span class="profile-username" id="profileUsername">@alice • ID: T001</span>
+                        </div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()">Log Out</button>
+                </div>
+
+                <div class="exchange-stats-card">
+                    <h3>Exchange Metrics</h3>
+                    <div class="metric-row">
+                        <span>Fee Rate</span>
+                        <span class="text-mono">0.10% (0.001)</span>
+                    </div>
+                    <div class="metric-row">
+                        <span>Total Exchange Revenue</span>
+                        <span class="text-mono text-green" id="exchangeRevenueDisplay">$0.00</span>
+                    </div>
+                    <div class="metric-row">
+                        <span>Database Persistence</span>
+                        <span class="text-mono badge-active">MySQL Connected</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Slide-Up Order Placement Sheet (Modal) -->
+        <div id="orderSheetOverlay" class="order-sheet-overlay" onclick="closeOrderSheet(event)">
+            <div class="order-sheet" onclick="event.stopPropagation()">
+                <div class="sheet-handle"></div>
+                <div class="sheet-header">
+                    <div class="order-side-toggle">
+                        <button id="toggleBuy" class="side-btn buy active" onclick="setOrderSide('BUY')">BUY</button>
+                        <button id="toggleSell" class="side-btn sell" onclick="setOrderSide('SELL')">SELL</button>
+                    </div>
+                    <button class="sheet-close" onclick="closeOrderSheet()">&times;</button>
+                </div>
+
+                <div class="sheet-body">
+                    <!-- Order Type Selector -->
+                    <label class="form-label">Order Type</label>
+                    <div class="order-types-grid">
+                        <button class="type-pill active" onclick="setOrderType('LIMIT')">LIMIT</button>
+                        <button class="type-pill" onclick="setOrderType('MARKET')">MARKET</button>
+                        <button class="type-pill" onclick="setOrderType('IOC')">IOC</button>
+                        <button class="type-pill" onclick="setOrderType('FOK')">FOK</button>
+                        <button class="type-pill" onclick="setOrderType('STOP_LOSS')">STOP LOSS</button>
+                        <button class="type-pill" onclick="setOrderType('STOP_BUY')">STOP BUY</button>
+                    </div>
+
+                    <!-- Quantity Input with Quick Multipliers -->
+                    <div class="form-group">
+                        <label class="form-label">Quantity (Shares)</label>
+                        <div class="qty-input-row">
+                            <input type="number" id="orderQty" class="input-dark text-mono" value="10" min="1" step="1" oninput="calculateEstimates()">
+                            <div class="quick-chips">
+                                <span class="chip" onclick="addQty(5)">+5</span>
+                                <span class="chip" onclick="addQty(10)">+10</span>
+                                <span class="chip" onclick="addQty(50)">+50</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Price Input (Disabled if Market) -->
+                    <div class="form-group" id="priceFormGroup">
+                        <label class="form-label" id="priceLabel">Price (USD)</label>
+                        <input type="number" id="orderPrice" class="input-dark text-mono" value="100.00" step="0.01" oninput="calculateEstimates()">
+                        <span class="input-hint" id="tickHint">Tick size: $0.01</span>
+                    </div>
+
+                    <!-- Calculation & Margin Summary -->
+                    <div class="order-summary-box text-mono">
+                        <div class="sum-row">
+                            <span>Trade Value:</span>
+                            <span id="sumValue">$1,000.00</span>
+                        </div>
+                        <div class="sum-row">
+                            <span>Exchange Fee (0.1%):</span>
+                            <span id="sumFee">$1.00</span>
+                        </div>
+                        <div class="sum-row total">
+                            <span id="sumTotalLabel">Total Required:</span>
+                            <span id="sumTotal" class="text-green">$1,001.00</span>
+                        </div>
+                    </div>
+
+                    <div id="orderErrorMsg" class="order-error hidden"></div>
+
+                    <!-- Submit Button -->
+                    <button id="btnSubmitOrder" class="btn-submit-order buy" onclick="submitOrder()">
+                        PLACE BUY ORDER
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="switchScreen('watchlist')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                <span>Markets</span>
+            </button>
+            <button class="nav-item" onclick="switchScreen('trade')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+                <span>Trade Depth</span>
+            </button>
+            <button class="nav-item" onclick="switchScreen('orders')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                <span>Orders</span>
+            </button>
+            <button class="nav-item" onclick="switchScreen('portfolio')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+                <span>Portfolio</span>
+            </button>
+            <button class="nav-item" onclick="switchScreen('funds')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                <span>Funds</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
